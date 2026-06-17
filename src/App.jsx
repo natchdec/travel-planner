@@ -3,41 +3,59 @@ import { TrendingUp, TrendingDown, DollarSign, Activity, BarChart2, Bell, FileTe
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-// Mock Data: Expanded US Stocks Top Picks with Chart Data
+// Helper to generate 20 years of realistic-looking stock data
+function generateMockHistory(currentPriceStr, years) {
+  const currentPrice = parseFloat(currentPriceStr.replace(/,/g, ''));
+  const data = [];
+  const pointsPerYear = 12; // Monthly data points
+  const totalPoints = years * pointsPerYear;
+  
+  // Start at a fraction of the current price 20 years ago
+  let price = currentPrice * 0.15; 
+  const startDate = new Date();
+  startDate.setFullYear(startDate.getFullYear() - years);
+
+  for (let i = 0; i < totalPoints; i++) {
+    const d = new Date(startDate);
+    d.setMonth(d.getMonth() + i);
+    
+    // Random walk with an upward bias
+    const change = 1 + (Math.random() * 0.15 - 0.06); 
+    price = price * change;
+    
+    // Gently pull it towards the target trajectory
+    const progress = i / totalPoints;
+    // Exponential growth curve approximation
+    const targetPriceAtProgress = currentPrice * Math.pow((1 / 0.15), progress - 1);
+    price = price * 0.7 + targetPriceAtProgress * 0.3;
+
+    data.push({
+      name: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'),
+      val: parseFloat(price.toFixed(2)),
+      timestamp: d.getTime()
+    });
+  }
+  
+  // Guarantee the last point is today's price
+  if (data.length > 0) {
+    data[data.length - 1].val = currentPrice;
+    data[data.length - 1].name = 'Today';
+  }
+  
+  return data;
+}
+
+// Mock Data: Expanded US Stocks Top Picks
 const topStocks = [
-  { 
-    symbol: "S&P 500", name: "S&P 500 Index", price: "5,147.21", change: "+0.73%", isUp: true, target: "5,300", recommendation: "BUY",
-    history: [{name: 'Mon', val: 5100}, {name: 'Tue', val: 5120}, {name: 'Wed', val: 5110}, {name: 'Thu', val: 5135}, {name: 'Fri', val: 5147}]
-  },
-  { 
-    symbol: "NVDA", name: "NVIDIA Corp.", price: "926.69", change: "+4.12%", isUp: true, target: "1,100", recommendation: "BUY",
-    history: [{name: 'Mon', val: 890}, {name: 'Tue', val: 895}, {name: 'Wed', val: 910}, {name: 'Thu', val: 915}, {name: 'Fri', val: 926}]
-  },
-  { 
-    symbol: "AAPL", name: "Apple Inc.", price: "173.50", change: "-0.85%", isUp: false, target: "195", recommendation: "HOLD",
-    history: [{name: 'Mon', val: 178}, {name: 'Tue', val: 176}, {name: 'Wed', val: 175}, {name: 'Thu', val: 174}, {name: 'Fri', val: 173}]
-  },
-  { 
-    symbol: "MSFT", name: "Microsoft Corp.", price: "416.42", change: "+1.24%", isUp: true, target: "450", recommendation: "BUY",
-    history: [{name: 'Mon', val: 405}, {name: 'Tue', val: 410}, {name: 'Wed', val: 408}, {name: 'Thu', val: 412}, {name: 'Fri', val: 416}]
-  },
-  { 
-    symbol: "META", name: "Meta Platforms", price: "505.22", change: "+2.50%", isUp: true, target: "550", recommendation: "BUY",
-    history: [{name: 'Mon', val: 480}, {name: 'Tue', val: 490}, {name: 'Wed', val: 495}, {name: 'Thu', val: 500}, {name: 'Fri', val: 505}]
-  },
-  { 
-    symbol: "GOOGL", name: "Alphabet Inc.", price: "142.65", change: "+1.15%", isUp: true, target: "160", recommendation: "BUY",
-    history: [{name: 'Mon', val: 138}, {name: 'Tue', val: 140}, {name: 'Wed', val: 141}, {name: 'Thu', val: 140}, {name: 'Fri', val: 142}]
-  },
-  { 
-    symbol: "TSLA", name: "Tesla Inc.", price: "175.22", change: "-2.30%", isUp: false, target: "160", recommendation: "SELL",
-    history: [{name: 'Mon', val: 185}, {name: 'Tue', val: 180}, {name: 'Wed', val: 178}, {name: 'Thu', val: 177}, {name: 'Fri', val: 175}]
-  },
-  { 
-    symbol: "AMZN", name: "Amazon.com Inc.", price: "178.15", change: "+3.20%", isUp: true, target: "210", recommendation: "BUY",
-    history: [{name: 'Mon', val: 170}, {name: 'Tue', val: 172}, {name: 'Wed', val: 175}, {name: 'Thu', val: 176}, {name: 'Fri', val: 178}]
-  },
-];
+  { symbol: "S&P 500", name: "S&P 500 Index", price: "5,147.21", change: "+0.73%", isUp: true, target: "5,300", recommendation: "BUY" },
+  { symbol: "NVDA", name: "NVIDIA Corp.", price: "926.69", change: "+4.12%", isUp: true, target: "1,100", recommendation: "BUY" },
+  { symbol: "AAPL", name: "Apple Inc.", price: "173.50", change: "-0.85%", isUp: false, target: "195", recommendation: "HOLD" },
+  { symbol: "MSFT", name: "Microsoft Corp.", price: "416.42", change: "+1.24%", isUp: true, target: "450", recommendation: "BUY" },
+  { symbol: "META", name: "Meta Platforms", price: "505.22", change: "+2.50%", isUp: true, target: "550", recommendation: "BUY" },
+  { symbol: "GOOGL", name: "Alphabet Inc.", price: "142.65", change: "+1.15%", isUp: true, target: "160", recommendation: "BUY" },
+  { symbol: "TSLA", name: "Tesla Inc.", price: "175.22", change: "-2.30%", isUp: false, target: "160", recommendation: "SELL" },
+  { symbol: "AMZN", name: "Amazon.com Inc.", price: "178.15", change: "+3.20%", isUp: true, target: "210", recommendation: "BUY" },
+].map(stock => ({ ...stock, history: generateMockHistory(stock.price, 20) }));
 
 // Mock Data: Upcoming Bonds (Thai Corporate Bonds)
 const upcomingBonds = [
@@ -67,8 +85,9 @@ function App() {
   // State for Filter
   const [minUpside, setMinUpside] = useState('')
   
-  // State for Modal
+  // State for Modal & Charts
   const [selectedStock, setSelectedStock] = useState(null)
+  const [timeRange, setTimeRange] = useState('1Y') // 1M, 6M, 1Y, 5Y, 20Y
 
   // State for AI Planner
   const [apiKey, setApiKey] = useState('')
@@ -86,6 +105,22 @@ function App() {
     if (isNaN(targetVal)) return true;
     return changeVal >= targetVal;
   });
+
+  // Chart Data Filter Logic
+  const getFilteredChartData = () => {
+    if (!selectedStock) return [];
+    const now = new Date().getTime();
+    const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+    let cutoff = 0;
+    
+    if (timeRange === '1M') cutoff = now - (msPerYear / 12);
+    else if (timeRange === '6M') cutoff = now - (msPerYear / 2);
+    else if (timeRange === '1Y') cutoff = now - msPerYear;
+    else if (timeRange === '5Y') cutoff = now - (5 * msPerYear);
+    else if (timeRange === '20Y') cutoff = now - (20 * msPerYear);
+    
+    return selectedStock.history.filter(d => d.timestamp >= cutoff);
+  };
 
   // AI Generation Logic
   const handleGenerateAI = async (e) => {
@@ -119,6 +154,8 @@ function App() {
       setIsAiLoading(false);
     }
   };
+
+  const timeRanges = ['1M', '6M', '1Y', '5Y', '20Y'];
 
   return (
     <div className="app-container">
@@ -310,7 +347,7 @@ function App() {
       {selectedStock && (
         <div className="modal-overlay" onClick={() => setSelectedStock(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
+            <div className="modal-header" style={{marginBottom: '0'}}>
               <div>
                 <h2 style={{fontSize: '2rem', marginBottom: '0.5rem'}}>{selectedStock.symbol} <span style={{fontWeight: 300, color: 'var(--text-muted)'}}>({selectedStock.name})</span></h2>
                 <div style={{fontSize: '1.2rem', color: selectedStock.isUp ? 'var(--accent-green)' : 'var(--accent-red)'}}>
@@ -320,21 +357,43 @@ function App() {
               <button className="close-btn" onClick={() => setSelectedStock(null)}><X size={32} /></button>
             </div>
             
-            <div className="chart-container">
+            {/* Time Range Selector */}
+            <div style={{display: 'flex', gap: '0.5rem', marginTop: '1.5rem', marginBottom: '1rem'}}>
+              {timeRanges.map(range => (
+                <button 
+                  key={range}
+                  onClick={() => setTimeRange(range)}
+                  style={{
+                    background: timeRange === range ? 'var(--accent-blue)' : 'rgba(255,255,255,0.05)',
+                    color: timeRange === range ? 'white' : 'var(--text-muted)',
+                    border: 'none',
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '0.85rem'
+                  }}
+                >
+                  {range}
+                </button>
+              ))}
+            </div>
+
+            <div className="chart-container" style={{marginTop: '0'}}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={selectedStock.history}>
-                  <XAxis dataKey="name" stroke="var(--text-muted)" />
+                <LineChart data={getFilteredChartData()}>
+                  <XAxis dataKey="name" stroke="var(--text-muted)" minTickGap={30} />
                   <YAxis domain={['auto', 'auto']} stroke="var(--text-muted)" />
                   <Tooltip 
                     contentStyle={{background: 'var(--bg-dark)', border: '1px solid var(--border-color)', borderRadius: '8px'}}
                     itemStyle={{color: 'var(--accent-blue)', fontWeight: 600}}
                   />
-                  <Line type="monotone" dataKey="val" stroke="var(--accent-blue)" strokeWidth={3} dot={{r: 4, fill: 'var(--bg-card)'}} activeDot={{r: 8}} />
+                  <Line type="monotone" dataKey="val" stroke="var(--accent-blue)" strokeWidth={2} dot={false} activeDot={{r: 6}} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
 
-            <div className="stock-metrics" style={{marginTop: '2rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem'}}>
+            <div className="stock-metrics" style={{marginTop: '1.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem'}}>
               <div className="metric">
                 <span className="metric-label">Analyst Target</span>
                 <span className="metric-value" style={{fontSize: '1.2rem'}}>${selectedStock.target}</span>
