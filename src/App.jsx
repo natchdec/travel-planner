@@ -3,18 +3,19 @@ import { TrendingUp, TrendingDown, DollarSign, Activity, BarChart2, Bell, FileTe
 
 // Mock Data: US Stocks Top Picks
 const topStocks = [
+  { symbol: "S&P 500", name: "S&P 500 Index", price: "5,147.21", change: "+0.73%", isUp: true, target: "5,300", recommendation: "BUY" },
   { symbol: "NVDA", name: "NVIDIA Corp.", price: "926.69", change: "+4.12%", isUp: true, target: "1,100", recommendation: "BUY" },
   { symbol: "AAPL", name: "Apple Inc.", price: "173.50", change: "-0.85%", isUp: false, target: "195", recommendation: "HOLD" },
   { symbol: "MSFT", name: "Microsoft Corp.", price: "416.42", change: "+1.24%", isUp: true, target: "450", recommendation: "BUY" },
-  { symbol: "TSLA", name: "Tesla Inc.", price: "175.22", change: "-2.30%", isUp: false, target: "160", recommendation: "SELL" },
 ];
 
-// Mock Data: Upcoming Bonds
+// Mock Data: Upcoming Bonds (Thai Corporate Bonds)
 const upcomingBonds = [
-  { issuer: "Apple Inc.", coupon: "4.15%", maturity: "10 Years", rating: "AA+", date: "Oct 15, 2026", type: "Corporate" },
-  { issuer: "US Treasury", coupon: "4.50%", maturity: "5 Years", rating: "AAA", date: "Nov 01, 2026", type: "Government" },
-  { issuer: "Walt Disney Co.", coupon: "5.20%", maturity: "7 Years", rating: "A-", date: "Oct 20, 2026", type: "Corporate" },
-  { issuer: "Goldman Sachs", coupon: "6.05%", maturity: "5 Years", rating: "BBB+", date: "Nov 05, 2026", type: "Financial" },
+  { issuer: "CPALL", coupon: "3.25%", maturity: "3 Years", rating: "A+", date: "Jun 20-22, 2026", month: "June" },
+  { issuer: "GULF", coupon: "3.50%", maturity: "5 Years", rating: "A+", date: "Jun 25-27, 2026", month: "June" },
+  { issuer: "SIRI (แสนสิริ)", coupon: "4.60%", maturity: "2.5 Years", rating: "BBB+", date: "Jul 05-07, 2026", month: "July" },
+  { issuer: "PTT", coupon: "3.00%", maturity: "7 Years", rating: "AAA", date: "Jul 15-18, 2026", month: "July" },
+  { issuer: "MINT", coupon: "4.25%", maturity: "4 Years", rating: "A", date: "Aug 02-04, 2026", month: "August" },
 ];
 
 // Mock Data: Insights
@@ -92,26 +93,26 @@ function App() {
           </div>
 
           <div className="section-title" style={{marginTop: '4rem'}}>
-            <FileText size={24} /> Upcoming Bond Issuances
+            <FileText size={24} /> ปฏิทินหุ้นกู้ไทยออกใหม่
           </div>
           
           <div className="bonds-container">
             <table>
               <thead>
                 <tr>
+                  <th>Month</th>
                   <th>Issuer</th>
-                  <th>Type</th>
                   <th>Coupon</th>
                   <th>Maturity</th>
                   <th>Rating</th>
-                  <th>Issue Date</th>
+                  <th>Subscription Date</th>
                 </tr>
               </thead>
               <tbody>
                 {upcomingBonds.map((bond, i) => (
                   <tr key={i}>
+                    <td><span className="badge" style={{background: 'rgba(59,130,246,0.1)', color: 'var(--accent-blue)'}}>{bond.month}</span></td>
                     <td style={{fontWeight: 600}}>{bond.issuer}</td>
-                    <td>{bond.type}</td>
                     <td style={{color: 'var(--accent-green)', fontWeight: 600}}>{bond.coupon}</td>
                     <td>{bond.maturity}</td>
                     <td>{bond.rating}</td>
