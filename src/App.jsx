@@ -114,7 +114,7 @@ function App() {
       setAiResult(response.text());
     } catch (error) {
       console.error(error);
-      setAiResult("❌ เกิดข้อผิดพลาดในการเชื่อมต่อกับ Gemini API กรุณาตรวจสอบ API Key ของคุณอีกครั้ง");
+      setAiResult(`❌ เกิดข้อผิดพลาดในการเชื่อมต่อกับ Gemini API: ${error.message}`);
     } finally {
       setIsAiLoading(false);
     }
